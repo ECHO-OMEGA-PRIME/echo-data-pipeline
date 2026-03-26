@@ -1,0 +1,22 @@
+{
+  "name": "echo-data-pipeline",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "keywords": ["etl", "data-pipeline", "cloudflare-worker"],
+  "author": "ECHO-OMEGA-PRIME",
+  "license": "ISC",
+  "description": "ETL/data pipeline orchestration Worker for the ECHO ecosystem",
+  "dependencies": {
+    "hono": "^4.12.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260317.1",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.76.0"
+  }
+}
