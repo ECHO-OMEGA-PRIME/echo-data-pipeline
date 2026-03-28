@@ -22,7 +22,7 @@ app.use('*', cors({
 
 // ─── Auth middleware (skip /health) ─────────────────────────────────────────
 app.use('*', async (c, next) => {
-  if (c.req.path === '/health' || c.req.method === 'OPTIONS') {
+  if (c.req.path === '/' || c.req.path === '/health' || c.req.method === 'OPTIONS') {
     return next();
   }
   const apiKey = c.req.header('X-Echo-API-Key');
@@ -56,6 +56,8 @@ app.onError((err, c) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. GET /health
 // ═══════════════════════════════════════════════════════════════════════════
+app.get("/", (c) => c.json({ service: 'echo-data-pipeline', status: 'operational' }));
+
 app.get('/health', async (c) => {
   const uptime = Math.floor((Date.now() - START_TIME) / 1000);
   let dbOk = false;
