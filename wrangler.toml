@@ -26,3 +26,7 @@ service = "echo-alert-router"
 [[services]]
 binding = "KNOWLEDGE_FORGE"
 service = "echo-knowledge-forge"
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "echo_metrics"
