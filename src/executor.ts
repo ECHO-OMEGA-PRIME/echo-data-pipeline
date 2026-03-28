@@ -5,6 +5,39 @@ import { logger } from './logger';
 
 type DataRecord = Record<string, unknown>;
 
+// ─── SQL injection prevention ───────────────────────────────────────────────
+// Only these tables may be targeted by d1 destination writes.
+// Add new tables here as pipelines require them.
+const TABLE_ALLOWLIST = new Set([
+  'pipelines',
+  'pipeline_runs',
+  'pipeline_steps',
+  'pipeline_queue',
+  'records',
+  'documents',
+  'metadata',
+  'knowledge_entries',
+  'embeddings',
+  'analytics',
+  'events',
+  'logs',
+  'metrics',
+  'scraped_data',
+  'ingested_records',
+  'pipeline_output',
+]);
+
+// Column names must be plain identifiers: alphanumeric + underscore only.
+const SAFE_IDENTIFIER_RE = /^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/;
+
+function validateTableName(table: string): boolean {
+  return TABLE_ALLOWLIST.has(table);
+}
+
+function validateColumnName(col: string): boolean {
+  return SAFE_IDENTIFIER_RE.test(col);
+}
+
 /**
  * Fetch source data based on pipeline source configuration
  */
@@ -47,6 +80,21 @@ async function fetchSourceData(
     case 'd1': {
       const query = sourceConfig.query as string;
       if (!query) return { records: [], error: 'SQL query is required for d1 source' };
+
+      // Only allow SELECT queries to prevent destructive operations via d1 source
+      const trimmed = query.trim().toUpperCase();
+      if (!trimmed.startsWith('SELECT')) {
+        logger.error('D1 source blocked: only SELECT queries allowed', { query_prefix: trimmed.slice(0, 30) });
+        return { records: [], error: 'D1 source only allows SELECT queries' };
+      }
+
+      // Block dangerous SQL patterns even within SELECT (subquery attacks)
+      const dangerous = /\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|ATTACH|DETACH|PRAGMA)\b/i;
+      if (dangerous.test(query)) {
+        logger.error('D1 source blocked: dangerous SQL keyword detected', { query_prefix: query.slice(0, 60) });
+        return { records: [], error: 'D1 source query contains disallowed SQL keywords' };
+      }
+
       const result = await env.DB.prepare(query).all();
       return { records: (result.results || []) as DataRecord[], error: null };
     }
@@ -135,6 +183,12 @@ async function writeDestination(
       const table = destConfig.table as string;
       if (!table) return { written: 0, error: 'Table name required for d1 destination' };
 
+      // Validate table name against allowlist to prevent SQL injection
+      if (!validateTableName(table)) {
+        logger.error('D1 destination blocked: invalid table name', { table, allowed: [...TABLE_ALLOWLIST] });
+        return { written: 0, error: `Invalid table name '${table}'. Must be one of: ${[...TABLE_ALLOWLIST].join(', ')}` };
+      }
+
       const mode = (destConfig.mode as string) || 'insert';
       let written = 0;
 
@@ -144,6 +198,14 @@ async function writeDestination(
 
       for (const record of records) {
         const keys = Object.keys(record);
+
+        // Validate all column names to prevent SQL injection via crafted field names
+        const invalidCols = keys.filter(k => !validateColumnName(k));
+        if (invalidCols.length > 0) {
+          logger.warn('D1 insert skipped: invalid column names', { table, invalid_columns: invalidCols });
+          continue;
+        }
+
         const placeholders = keys.map(() => '?').join(',');
         const values = keys.map(k => {
           const v = record[k];
