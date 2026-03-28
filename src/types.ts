@@ -4,6 +4,7 @@ export interface Env {
   SHARED_BRAIN: Fetcher;
   ALERT_ROUTER: Fetcher;
   KNOWLEDGE_FORGE: Fetcher;
+  ECHO_API_KEY: string;
 }
 
 export interface Pipeline {

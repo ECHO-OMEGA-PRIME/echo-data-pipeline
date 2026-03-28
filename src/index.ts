@@ -26,7 +26,7 @@ app.use('*', async (c, next) => {
     return next();
   }
   const apiKey = c.req.header('X-Echo-API-Key');
-  if (apiKey !== 'echo-omega-prime-forge-x-2026') {
+  if (!c.env.ECHO_API_KEY || apiKey !== c.env.ECHO_API_KEY) {
     return c.json({ success: false, error: 'Unauthorized: invalid or missing X-Echo-API-Key', timestamp: nowISO() }, 401);
   }
   return next();

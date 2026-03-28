@@ -68,7 +68,7 @@ async function fetchSourceData(
       const endpoint = (sourceConfig.endpoint as string) || '/stats';
       try {
         const resp = await env.SHARED_BRAIN.fetch(new Request(`https://internal${endpoint}`, {
-          headers: { 'X-Echo-API-Key': 'echo-omega-prime-forge-x-2026' },
+          headers: { 'X-Echo-API-Key': env.ECHO_API_KEY },
         }));
         const data = await resp.json() as unknown;
         const arr = Array.isArray(data) ? data : (data && typeof data === 'object' && 'data' in data ? (data as Record<string, unknown>).data : [data]);
@@ -82,7 +82,7 @@ async function fetchSourceData(
       const endpoint = (sourceConfig.endpoint as string) || '/health';
       try {
         const resp = await env.KNOWLEDGE_FORGE.fetch(new Request(`https://internal${endpoint}`, {
-          headers: { 'X-Echo-API-Key': 'echo-omega-prime-forge-x-2026' },
+          headers: { 'X-Echo-API-Key': env.ECHO_API_KEY },
         }));
         const data = await resp.json() as unknown;
         const arr = Array.isArray(data) ? data : [data];
@@ -193,7 +193,7 @@ async function writeDestination(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Echo-API-Key': 'echo-omega-prime-forge-x-2026',
+            'X-Echo-API-Key': env.ECHO_API_KEY,
           },
           body: JSON.stringify({ records, pipeline_id: pipeline.id, timestamp: nowISO() }),
         }));
