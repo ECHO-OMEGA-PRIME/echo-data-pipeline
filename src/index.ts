@@ -7,6 +7,8 @@ import { generateId, response, errorResponse, nowISO, parsePagination } from './
 import { executePipeline } from './executor';
 import { processQueue, aggregateHourlyStats, dailyCleanup } from './crons';
 
+const ALLOWED_ORIGINS = ['https://echo-ept.com','https://www.echo-ept.com','https://echo-op.com','https://profinishusa.com','https://bgat.echo-op.com'];
+
 const app = new Hono<{ Bindings: Env }>();
 
 const VERSION = '1.0.0';
@@ -15,7 +17,7 @@ const START_TIME = Date.now();
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
 app.use('*', cors({
-  origin: '*',
+  origin: (o) => ALLOWED_ORIGINS.includes(o) ? o : ALLOWED_ORIGINS[0],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'X-Echo-API-Key', 'Authorization'],
 }));
